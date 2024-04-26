@@ -1,4 +1,5 @@
 const dotenv = require("dotenv");
+
 // Untuk baca .env kita saat migration dan lainnya ke DB
 dotenv.config();
 
