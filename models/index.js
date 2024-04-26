@@ -1,16 +1,50 @@
-const router = require("express").Router();
-const swaggerUI = require("swagger-ui-express");
-const swaggerDocument = require("../docs/swagger.json");
+"use strict";
 
-router.use("/api-docs", swaggerUI.serve);
-router.use("/api-docs", swaggerUI.setup(swaggerDocument));
+const fs = require("fs");
+const path = require("path");
+const Sequelize = require("sequelize");
+const process = require("process");
+const basename = path.basename(__filename);
+const env = process.env.NODE_ENV || "development";
+const config = require(__dirname + "/../config/database.js")[env];
+const db = {};
 
-const Auth = require("./authRouter");
-const User = require("./userRouter");
-const Car = require("./carRouter");
+let sequelize;
+if (config.use_env_variable) {
+  sequelize = new Sequelize(process.env[config.use_env_variable], config);
+} else {
+  sequelize = new Sequelize(
+    config.database,
+    config.username,
+    config.password,
+    config
+  );
+}
 
-router.use("/api/v1/auth", Auth);
-router.use("/api/v1/users", User);
-router.use("/api/v1/cars", Car);
+fs.readdirSync(__dirname)
+  .filter((file) => {
+    return (
+      file.indexOf(".") !== 0 &&
+      file !== basename &&
+      file.slice(-3) === ".js" &&
+      file.indexOf(".test.js") === -1
+    );
+  })
+  .forEach((file) => {
+    const model = require(path.join(__dirname, file))(
+      sequelize,
+      Sequelize.DataTypes
+    );
+    db[model.name] = model;
+  });
 
-module.exports = router;
+Object.keys(db).forEach((modelName) => {
+  if (db[modelName].associate) {
+    db[modelName].associate(db);
+  }
+});
+
+db.sequelize = sequelize;
+db.Sequelize = Sequelize;
+
+module.exports = db;

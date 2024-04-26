@@ -6,7 +6,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 
 const ApiError = require("./utils/ApiError");
-const errorHandler = require("./controllers/errorController");
+const errorHandler = require("./controllers/ErrorController");
 
 const router = require("./routes");
 
