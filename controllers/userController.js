@@ -18,17 +18,17 @@ const createAdmin = async (req, res, next) => {
     });
 
     if (checkUser) {
-      next(new ApiError("Email sudah ada", 409));
+      next(new ApiError("Email already exists", 409));
     }
 
     // minimum password length
-    if (password.length < 8) {
-      next(new ApiError("Panjang password minimal 8 karakter", 400));
+    if (password.length < 10) {
+      next(new ApiError("The minimum password length is 10 characters", 400));
     }
 
     // minimum password length
     if (password !== confirmPassword) {
-      next(new ApiError("password tidak cocok", 400));
+      next(new ApiError("passwords do not match", 400));
     }
 
     // hashing password
@@ -69,7 +69,7 @@ const findUsers = async (req, res, next) => {
     const filterCondition = {};
     if (role) {
       if (!validRoles.includes(role)) {
-        next(new ApiError(`role '${role}' tidak valid`, 400));
+        next(new ApiError(`role '${role}' invalid`, 400));
       }
       filterCondition.role = role;
     }
@@ -97,7 +97,7 @@ const findUserById = async (req, res, next) => {
     });
 
     if (!user) {
-      next(new ApiError(`User dengan id: ${req.params.id} tidak ada`, 404));
+      next(new ApiError(`User with id: ${req.params.id} There isn't any`, 404));
     }
 
     res.status(200).json({
@@ -120,7 +120,9 @@ const UpdateUser = async (req, res, next) => {
       userId = req.params.id;
       const user = User.findByPk(req.userId);
       if (!user) {
-        next(new ApiError(`User dengan id: ${req.params.id} tidak ada`, 404));
+        next(
+          new ApiError(`User with id: ${req.params.id} does not exist`, 404)
+        );
       }
     } else {
       userId = req.user.id;
@@ -130,12 +132,12 @@ const UpdateUser = async (req, res, next) => {
     if (password) {
       // minimum password length
       if (password.length < 8) {
-        next(new ApiError("Panjang password minimal 8 karakter", 400));
+        next(new ApiError("The minimum password length is 8 characters", 400));
       }
 
       // minimum password length
       if (password !== confirmPassword) {
-        next(new ApiError("password tidak cocok", 400));
+        next(new ApiError("passwords do not match", 400));
       }
 
       const saltRounds = 10;
@@ -175,7 +177,7 @@ const UpdateUser = async (req, res, next) => {
 
     res.status(200).json({
       status: "Success",
-      message: "User sukses diupdate",
+      message: "User updated successfully",
       data: updatedData,
     });
   } catch (err) {
@@ -192,7 +194,7 @@ const deleteUser = async (req, res, next) => {
     });
 
     if (!user) {
-      next(new ApiError(`User dengan id: ${req.params.id} tidak ada`, 404));
+      next(new ApiError(`User with id: ${req.params.id} does not exist`, 404));
     }
 
     await User.destroy({
@@ -203,7 +205,7 @@ const deleteUser = async (req, res, next) => {
 
     res.status(200).json({
       status: "Success",
-      message: `sukses delete user ${user.name}`,
+      message: `user deleted successfully ${user.name}`,
     });
   } catch (err) {
     next(new ApiError(err.message, 400));

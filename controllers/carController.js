@@ -1,4 +1,4 @@
-const { Car, User } = require("../models");
+const { car, User } = require("../models");
 const imagekit = require("../lib/imagekit");
 const ApiError = require("../utils/ApiError");
 const { Op } = require("sequelize");
@@ -15,7 +15,7 @@ const uploadImage = async (file) => {
     });
 
     if (!uploadedImage)
-      return next(new ApiError("server gagal mengupload gambar", 500));
+      return next(new ApiError("The server failed to upload the image", 500));
 
     return uploadedImage.url;
   } catch (err) {
@@ -25,11 +25,16 @@ const uploadImage = async (file) => {
 
 const createCar = async (req, res, next) => {
   try {
-    const { model, type, price } = req.body;
+    const { model, type, capacity, price } = req.body;
 
     const file = req.file;
-    if (!model || !type || !price || !file) {
-      next(new ApiError("model, type, price, dan image harus diisi", 400));
+    if (!model || !type || !capacity || !price || !file) {
+      next(
+        new ApiError(
+          "model, type, capacity, price, dan image must be filled",
+          400
+        )
+      );
     }
     let imageUrl;
 
@@ -37,9 +42,10 @@ const createCar = async (req, res, next) => {
       imageUrl = await uploadImage(file);
     }
 
-    const newCar = await Car.create({
+    const newCar = await car.create({
       model,
       type,
+      capacity,
       price,
       createdBy: req.user.name,
       lastUpdatedBy: req.user.name,
@@ -62,7 +68,7 @@ const createCar = async (req, res, next) => {
 
 const findCars = async (req, res, next) => {
   try {
-    const cars = await Car.findAll({ paranoid: false });
+    const cars = await car.findAll({ paranoid: false });
 
     res.status(200).json({
       status: "Success",
@@ -77,14 +83,14 @@ const findCars = async (req, res, next) => {
 
 const findCarById = async (req, res, next) => {
   try {
-    const car = await Car.findByPk(req.params.id);
+    const cars = await car.findByPk(req.params.id);
 
-    if (!car) return next(new ApiError("id tidak ditemukan", 404));
+    if (!cars) return next(new ApiError("ID not found", 404));
 
     res.status(200).json({
       status: "Success",
       data: {
-        car,
+        cars,
       },
     });
   } catch (err) {
@@ -94,11 +100,11 @@ const findCarById = async (req, res, next) => {
 
 const updateCar = async (req, res, next) => {
   try {
-    const checkCar = await Car.findByPk(req.params.id);
+    const checkCar = await car.findByPk(req.params.id);
 
-    if (!checkCar) return next(new ApiError("Id tidak ditemukan", 404));
+    if (!checkCar) return next(new ApiError("ID not found", 404));
 
-    const { model, type, price } = req.body;
+    const { model, type, capacity, price } = req.body;
     const file = req.file;
 
     let imageUrl;
@@ -107,9 +113,10 @@ const updateCar = async (req, res, next) => {
       imageUrl = await uploadImage(file);
     }
 
-    await Car.update(
+    await car.update(
       {
         type,
+        capacity,
         price,
         model,
         imageUrl,
@@ -122,11 +129,11 @@ const updateCar = async (req, res, next) => {
       }
     );
 
-    const updatedCar = await Car.findByPk(req.params.id);
+    const updatedCar = await car.findByPk(req.params.id);
 
     res.status(200).json({
       status: "Success",
-      message: "sukses update produk",
+      message: "successful car update",
       data: updatedCar,
     });
   } catch (err) {
@@ -136,17 +143,17 @@ const updateCar = async (req, res, next) => {
 
 const deleteCar = async (req, res, next) => {
   try {
-    const car = await Car.findOne({
+    const cars = await car.findOne({
       where: {
         id: req.params.id,
       },
     });
 
-    if (!car) return next(new ApiError("Car id tersebut tidak ditemukan", 404));
+    if (!cars) return next(new ApiError("the car ID was not found", 404));
 
     const deletedBy = await User.findByPk(req.user.id);
 
-    await Car.update(
+    await car.update(
       {
         deletedBy: deletedBy.name,
       },
@@ -157,7 +164,7 @@ const deleteCar = async (req, res, next) => {
       }
     );
 
-    await Car.destroy({
+    await car.destroy({
       where: {
         id: req.params.id,
       },
@@ -165,7 +172,7 @@ const deleteCar = async (req, res, next) => {
 
     res.status(200).json({
       status: "Success",
-      message: `berhasil menghapus data mobil id: ${car.id}`,
+      message: `successfully deleted car ID data: ${cars.id}`,
     });
   } catch (err) {
     next(new ApiError(err.message, 400));
@@ -178,7 +185,7 @@ const availableCars = async (req, res, next) => {
     if (minPrice && maxPrice && parseInt(minPrice) > parseInt(maxPrice))
       return next(
         new ApiError(
-          "Harga minimum tidak boleh lebih besar dari harga maksimum",
+          "The minimum price cannot be greater than the maximum price",
           400
         )
       );
@@ -211,10 +218,10 @@ const availableCars = async (req, res, next) => {
       };
     }
 
-    const cars = await Car.findAll({ where: filterCondition });
+    const cars = await car.findAll({ where: filterCondition });
 
     if (!cars) {
-      next(new ApiError("Data tidak ditemukan", 404));
+      next(new ApiError("Data not found", 404));
     }
 
     res.status(200).json({
